@@ -1,10 +1,10 @@
 import { Component } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { MonthCalendarComponent } from './month-calendar/month-calendar.component';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet],
+  imports: [MonthCalendarComponent],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss'
 })

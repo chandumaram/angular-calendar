@@ -1,0 +1,69 @@
+<div class="calendar-container">
+
+    <!-- Header -->
+    <div class="calendar-header">
+        <button (click)="previousMonth()">◀</button>
+        <h2>{{ monthYear() }}</h2>
+        <button (click)="nextMonth()">▶</button>
+    </div>
+
+    <!-- Grid -->
+    <div class="calendar-grid">
+
+        <div class="day-name" *ngFor="let day of dayLabels">
+            {{ day }}
+        </div>
+
+        <!-- Loop Weeks -->
+        <ng-container *ngFor="let week of weeks()">
+
+            <!-- Week row -->
+            <ng-container *ngFor="let day of week">
+
+                <div class="calendar-cell" [class.today]="isToday(day)" [class.weekend]="isWeekend(day)"
+                    [class.other-month]="!isCurrentMonth(day)" (dblclick)="onDoubleClick(day)"
+                    (touchstart)="onTouchStart(day)" (touchend)="onTouchEnd()">
+
+                    <div class="date-number" [class.today-date]="isToday(day)" [class.weekend-date]="isWeekend(day)">
+                        {{ day.getDate() }}
+                    </div>
+
+                    <!-- Event Badge -->
+                    <div *ngIf="getEventCount(day) > 0" class="badge"
+                        (click)="isCurrentMonth(day) && toggleEvents(day); $event.stopPropagation()">
+                        {{ getEventCount(day) }}
+                    </div>
+
+                    <!-- Total Duration -->
+                    <div class="total-duration" *ngIf="getEventsForDate(day).length > 0">
+                        Total: {{ getTotalDuration(day) }} hours
+                    </div>
+
+                </div>
+
+            </ng-container>
+
+            <!-- Expanded row -->
+            <div class="expanded-row" *ngIf="isSelectedWeek(week) && getEventsForDate(selectedDate()!).length > 0">
+
+                <div class="expanded-content">
+
+                    <div *ngFor="let event of getEventsForDate(selectedDate()!)" class="expanded-event">
+
+                        <span> {{ event.title }} </span>
+
+                        <div class="actions">
+                            <span (click)="editEvent(event)">Edit</span>
+                            <span (click)="deleteEvent(event)">Delete</span>
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </ng-container>
+    </div>
+
+</div>
