@@ -1,1 +1,2 @@
-<month-calendar></month-calendar>
+<month-calendar [events]="events" [badgeLabel]="'Tasks: '" (doubleClickOnCell)="addEvent($event)"
+    (eventAction)="onEventAction($event)" (changeMonthView)="onchangeMonthView($event)"></month-calendar>

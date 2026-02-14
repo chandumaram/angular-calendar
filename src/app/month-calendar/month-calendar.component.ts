@@ -1,44 +1,61 @@
 import { CommonModule } from '@angular/common';
-import { Component, computed, signal } from '@angular/core';
-
-export interface CalendarEvent {
-  id: number;
-  title: string;
-  taskDuration: string;
-  totalDuration: string;
-  date: Date;
-  color?: string;
-}
+import { Component, computed, EventEmitter, Input, Output, signal } from '@angular/core';
+import { CalendarEvent } from '../utils/calendar-utils';
+import { animate, style, transition, trigger } from '@angular/animations';
 
 @Component({
   selector: 'month-calendar',
   standalone: true,
   imports: [CommonModule],
   templateUrl: './month-calendar.component.html',
-  styleUrl: './month-calendar.component.scss'
+  styleUrl: './month-calendar.component.scss',
+  animations: [
+    trigger('expandCollapse', [
+      transition(':enter', [
+        style({
+          height: 0,
+          opacity: 0
+        }),
+        animate('250ms ease-out', style({
+          height: '*',
+          opacity: 1
+        }))
+      ]),
+
+      transition(':leave', [
+        animate('200ms ease-in', style({
+          height: 0,
+          opacity: 0
+        }))
+      ])
+    ])
+  ]
 })
 export class MonthCalendarComponent {
 
-  private eventIdCounter = 1;
+  @Input() previousMonthBtnLabel: string = '◀';
+  @Input() nextMonthBtnLabel: string = '▶';
+  @Input() badgeLabel: string = '';
+  // @Input() events: CalendarEvent[] = [];
+
+  @Input() set events(value: CalendarEvent[]) {
+    this._events.set(value ?? []);
+  }
+
+  get events() {
+    return this._events();
+  }
+
+  private _events = signal<CalendarEvent[]>([]);
+  totalDurationLabel: string = 'Total: ';
   dayLabels = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   currentDate = signal(new Date());
-  selectedDate = signal<Date | null>(null);
+  selectedDate = signal<Date | null>(new Date());
   private touchTimer: any;
 
-  events = signal<CalendarEvent[]>([
-    { id: 1, title: 'Meeting with Team', date: new Date(), taskDuration: '02:00', totalDuration: '23:00', color: 'blue' },
-    { id: 2, title: 'Team Building', date: new Date(), taskDuration: '04:00', totalDuration: '23:00', color: 'green' },
-    { id: 3, title: 'Conference Call', date: new Date(), taskDuration: '01:00', totalDuration: '23:00', color: 'purple' },
-    { id: 4, title: 'Lunch with Client', date: new Date(), taskDuration: '02:00', totalDuration: '23:00', color: 'orange' },
-    { id: 5, title: 'Review Meeting', date: new Date(), taskDuration: '01:00', totalDuration: '23:00', color: 'red' },
-    { id: 6, title: 'Project Deadline', date: new Date(), taskDuration: '03:00', totalDuration: '23:00', color: 'red' },
-    { id: 7, title: 'Meeting with Team 2', date: new Date(), taskDuration: '02:00', totalDuration: '23:00', color: 'blue' },
-    { id: 8, title: 'Meeting with Team 3', date: new Date(), taskDuration: '02:00', totalDuration: '23:00', color: 'blue' },
-    { id: 9, title: 'Meeting with Team 4', date: new Date(), taskDuration: '02:00', totalDuration: '23:00', color: 'blue' },
-    { id: 10, title: 'Meeting with Team 5', date: new Date(), taskDuration: '02:00', totalDuration: '23:00', color: 'blue' },
-    { id: 11, title: 'Meeting with Team 6', date: new Date(), taskDuration: '02:00', totalDuration: '23:00', color: 'blue' },
-    { id: 12, title: 'Birthday Party', date: new Date(2026, 2, 12), taskDuration: '04:00', totalDuration: '04:00', color: 'green' }
-  ]);
+  @Output() doubleClickOnCell = new EventEmitter<Date>();
+  @Output() eventAction = new EventEmitter<{ action: any, event: CalendarEvent }>();
+  @Output() changeMonthView = new EventEmitter<Date>();
 
   monthYear = computed(() => {
     const date = this.currentDate();
@@ -78,20 +95,24 @@ export class MonthCalendarComponent {
     return weeks;
   });
 
+  trackByWeek = (index: number) => index;
+  trackByDay = (_: number, day: Date) => day.toDateString();
+  trackByEvent = (_: number, event: CalendarEvent) => event.id;
+
   previousMonth() {
     const date = new Date(this.currentDate());
     date.setMonth(date.getMonth() - 1);
     this.currentDate.set(date);
-    console.log('Current Date:', this.currentDate());
     this.selectedDate.set(null);
+    this.changeMonthView.emit(date);
   }
 
   nextMonth() {
     const date = new Date(this.currentDate());
     date.setMonth(date.getMonth() + 1);
     this.currentDate.set(date);
-    console.log('Current Date:', this.currentDate());
     this.selectedDate.set(null);
+    this.changeMonthView.emit(date);
   }
 
   isToday(date: Date): boolean {
@@ -110,14 +131,33 @@ export class MonthCalendarComponent {
 
   getTotalDuration(date: Date): string {
     const events = this.getEventsForDate(date);
-    return events[0].totalDuration; // Assuming all events on the same day have the same totalDuration
+    return events[0]?.totalDurationInHrs ?? ''; // Assuming all events on the same day have the same totalDuration
   }
+
+  // eventsMap = computed(() => {
+  //   const map = new Map<string, CalendarEvent[]>();
+
+  //   for (const event of this.events) {
+  //     const key = event.start.toDateString();
+
+  //     if (!map.has(key)) {
+  //       map.set(key, []);
+  //     }
+
+  //     map.get(key)!.push(event);
+  //   }
+
+  //   return map;
+  // });
+
 
   getEventsForDate(date: Date): CalendarEvent[] {
     if (!date) return [];
-    return this.events().filter(event =>
-      event.date.toDateString() === date.toDateString()
+    return this.events.filter(event =>
+      event.start.toDateString() === date.toDateString()
     );
+
+    // return this.eventsMap().get(date.toDateString()) ?? [];
   }
 
   getEventCount(date: Date): number {
@@ -138,14 +178,18 @@ export class MonthCalendarComponent {
 
   onDoubleClick(date: Date) {
     if (!this.isCurrentMonth(date)) return;
-    this.addEvent(date);
+    // this.addEvent(date);
+    this.selectedDate.set(date);
+    this.doubleClickOnCell.emit(date);
   }
 
   onTouchStart(date: Date) {
     if (!this.isCurrentMonth(date)) return;
 
     this.touchTimer = setTimeout(() => {
-      this.addEvent(date);
+      // this.addEvent(date);
+      this.selectedDate.set(date);
+      this.doubleClickOnCell.emit(date);
     }, 500); // 500ms long press
   }
 
@@ -153,37 +197,22 @@ export class MonthCalendarComponent {
     clearTimeout(this.touchTimer);
   }
 
-  addEvent(date: Date) {
-    console.log('Adding event for date:', date);
-    const title = prompt('Enter event title:');
-    if (!title) return;
-
-    const newEvent: CalendarEvent = {
-      id: ++this.eventIdCounter,
-      title,
-      taskDuration: "02:00",
-      totalDuration: "23:00",
-      date,
-      color: 'purple'
-    };
-
-    this.events.update(events => [...events, newEvent]);
+  handleEventAction(action: any, event: CalendarEvent) {
+    this.eventAction.emit({ action, event });
   }
 
-  editEvent(event: CalendarEvent) {
-    const newTitle = prompt('Edit event title:', event.title);
-    if (!newTitle) return;
+  // addEvent(date: Date) {
+  //   console.log('Adding event for date:', date);
+  // }
 
-    this.events.update(events =>
-      events.map(e =>
-        e.id === event.id ? { ...e, title: newTitle } : e
-      )
-    );
-  }
+  // editEvent(event: CalendarEvent) {
+  //   console.log('Editing event:', event);
+  // }
 
-  deleteEvent(event: CalendarEvent) {
-    if (!confirm('Are you sure you want to delete this event?')) return;
-    this.events.update(events => events.filter(e => e.id !== event.id));
-  }
+  // deleteEvent(event: CalendarEvent) {
+  //   console.log('Deleting event:', event);
+  // }
+
+
 
 }
