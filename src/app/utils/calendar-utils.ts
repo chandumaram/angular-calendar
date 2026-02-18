@@ -1,4 +1,4 @@
-export declare enum CALENDAR_DAYS_OF_WEEK {
+export enum CALENDAR_DAYS_OF_WEEK {
     SUNDAY = 0,
     MONDAY = 1,
     TUESDAY = 2,

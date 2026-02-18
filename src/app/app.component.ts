@@ -14,14 +14,14 @@ export class AppComponent {
 
   actions: CalendarEventAction[] = [
     {
-      isBothIconAndLabel: true,
-      icon: 'fa-solid fa-pencil',
+      isBothIconAndLabel: false,
+      icon: 'fa fa-pencil',
       label: 'Edit',
       tooltip: 'Edit Event'
     },
     {
-      isBothIconAndLabel: true,
-      icon: 'fa-solid fa-trash',
+      isBothIconAndLabel: false,
+      icon: 'fa fa-trash',
       label: 'Delete',
       tooltip: 'Delete Event'
     }
@@ -42,6 +42,7 @@ export class AppComponent {
   }
 
   addEvent(date: Date) {
+    alert(`Add event for ${date}`)
     console.log('Adding event for date:', date);
   }
 
@@ -58,9 +59,11 @@ export class AppComponent {
 
   editEvent(event: CalendarEvent) {
     console.log('Editing event:', event);
+    alert(`Edit: ${event.title}`)
   }
 
   deleteEvent(event: CalendarEvent) {
+    alert(`Delete: ${event.title}`)
     console.log('Deleting event:', event);
   }
 }

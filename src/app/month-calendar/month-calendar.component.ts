@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, computed, EventEmitter, Input, Output, signal } from '@angular/core';
-import { CalendarEvent } from '../utils/calendar-utils';
+import { CALENDAR_DAYS_OF_WEEK, CalendarEvent } from '../utils/calendar-utils';
 import { animate, style, transition, trigger } from '@angular/animations';
 
 @Component({
@@ -122,7 +122,7 @@ export class MonthCalendarComponent {
 
   isWeekend(date: Date): boolean {
     const day = date.getDay();
-    return day === 0 || day === 6; // Sunday or Saturday
+    return day === CALENDAR_DAYS_OF_WEEK.SUNDAY || day === CALENDAR_DAYS_OF_WEEK.SATURDAY; // Sunday or Saturday
   }
 
   isCurrentMonth(date: Date): boolean {
